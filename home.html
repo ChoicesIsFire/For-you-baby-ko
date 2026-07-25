@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>For You ❤️</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+
+<style>
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  height: 100vh;   /* fallback for older browsers */
+  height: 100dvh;  /* FIX: matches the real visible viewport on mobile,
+                       so the page can't grow taller than the screen and
+                       trigger a scrollbar despite overflow:hidden below */
+  overflow: hidden;
+}
+
+body {
+  background: linear-gradient(135deg, #1a0033, #330066, #4b0082);
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+  color: #f5e6ff;
+  touch-action: manipulation; /* snappier taps on mobile, no double-tap zoom delay */
+}
+
+/* ✨ Title */
+h1 {
+  margin-top: 30px;
+  font-family: 'Pacifico', cursive;
+  font-size: 38px;
+  color: #d9b3ff;
+  text-shadow: 0 0 10px rgba(217,179,255,0.8);
+}
+
+/* ✨ Subtitle */
+p {
+  margin-top: -5px;
+  color: #e6ccff;
+  font-size: 16px;
+}
+
+/* ✨ Score */
+#score {
+  font-weight: bold;
+  margin-top: 10px;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255,255,255,0.6);
+}
+
+#game {
+  position: relative; /* FIX: hearts are absolutely positioned inside this
+                          box — without this, "absolute" was resolving
+                          against the whole page, so hearts fell from
+                          behind the title/score text instead of from the
+                          top of the play area */
+  overflow: hidden;   /* FIX: keeps hearts from visually spilling out of
+                          the game box once they pass its bottom edge */
+  height: 60vh;
+}
+
+/* 💜 Hearts */
+.heart {
+  position: absolute;
+  font-size: 28px;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  transition: opacity 0.2s; /* transform no longer transitions continuously —
+                               that was fighting the per-frame position
+                               updates and made falling look laggy; a
+                               one-off transition is applied only at the
+                               moment of the tap "pop" effect, in JS */
+  touch-action: manipulation;
+}
+
+/* 🌧 Purple rain */
+.rain {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0.25;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* 💖 Popup background */
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 0, 40, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 999; /* FIX: made explicit instead of relying on DOM order to
+                   stack above the falling hearts/rain */
+}
+
+.popup.show {
+  opacity: 1;
+}
+
+/* 💜 Popup box */
+.popup-box {
+  background: linear-gradient(145deg, #2a004d, #3b0066);
+  color: #f5e6ff;
+  padding: 30px;
+  border-radius: 20px;
+  width: 320px;
+  max-width: 85vw;
+  box-sizing: border-box;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+  box-shadow: 0 0 20px rgba(186, 85, 211, 0.5);
+}
+
+.popup.show .popup-box {
+  transform: scale(1);
+}
+
+.popup-box h2 {
+  color: #d9b3ff;
+  font-family: 'Pacifico', cursive;
+}
+
+/* 💖 Button */
+button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: #9933ff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+  touch-action: manipulation;
+}
+
+button:hover {
+  background: #b366ff;
+  transform: scale(1.05);
+}
+</style>
+</head>
+
+<body>
+
+<h1>Catch ONLY the purple hearts 💜</h1>
+<p>Too many red hearts = restart 😈</p>
+
+<p id="score">Purple Hearts: 0 💜 | Mistakes: 0/3 ❤️</p>
+
+<div id="game"></div>
+
+<!-- 💖 WIN POPUP -->
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <h2>You caught my heart... HEHEHE ❤️</h2>
+    <p>
+      Bae... Even if I don't say it often,<br>
+      Talking to you is my favorite part of my day.<br>
+      And yeah… I love you... super duper much.<br>
+      Don't ever let me go, okay? Cuz I won't... Kani ang proof.
+    </p>
+    <button onclick="goToNextPage()">Okay 💖</button>
+  </div>
+</div>
+
+<!-- 💔 LOSE POPUP -->
+<div id="losePopup" class="popup">
+  <div class="popup-box">
+    <h2>Aww 😢</h2>
+    <p>
+      Mga lahi na hearts gipang press huhu...💔<br>
+      Focus on me bae💜
+    </p>
+    <button onclick="restartGameNow()">Try again 💔</button>
+  </div>
+</div>
+
+<script>
+let score = 0;
+let wrong = 0;
+let gameActive = true;
+
+const game = document.getElementById("game");
+
+let heartTimer = null;
+let rainTimer = null;
+
+// FIX (the "drop rate slows down" bug): the old version gave every
+// single heart and rain drop its own setInterval that read
+// el.offsetTop and wrote el.style.top every 20ms. Reading offsetTop
+// forces the browser to recompute the page's layout right then and
+// there — fine with two or three hearts on screen, but once a dozen+
+// pile up (which happens more the longer you play now, since spawn
+// rate speeds up with score), all those forced layout recalculations
+// stack up and the browser's main thread can't keep up — so
+// everything visually stutters and looks like it's slowing down.
+//
+// Fix: a single requestAnimationFrame loop now drives every heart and
+// rain drop's position together, using elapsed time (not tick count)
+// so speed stays consistent even if a frame gets dropped, and moving
+// them with CSS `transform` instead of `top` so the browser can
+// animate them on the compositor without touching layout at all — this
+// scales to far more hearts on screen without stuttering.
+let fallingHearts = []; // { el, y, speed }
+let fallingRain = [];   // { el, y, speed }
+let lastFrameTime = null;
+
+function tick(now) {
+  if (lastFrameTime === null) lastFrameTime = now;
+  const dt = (now - lastFrameTime) / 16.67; // normalized to "60fps units"
+  lastFrameTime = now;
+
+  const gameHeight = game.clientHeight;
+  for (let i = fallingHearts.length - 1; i >= 0; i--) {
+    const h = fallingHearts[i];
+    h.y += h.speed * dt;
+    if (h.y > gameHeight) {
+      h.el.remove();
+      fallingHearts.splice(i, 1);
+      continue;
+    }
+    h.el.style.transform = "translateY(" + h.y + "px)";
+  }
+
+  const pageHeight = window.innerHeight;
+  for (let i = fallingRain.length - 1; i >= 0; i--) {
+    const r = fallingRain[i];
+    r.y += r.speed * dt;
+    if (r.y > pageHeight) {
+      r.el.remove();
+      fallingRain.splice(i, 1);
+      continue;
+    }
+    r.el.style.transform = "translateY(" + r.y + "px)";
+  }
+
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+function spawnHeart() {
+  const heart = document.createElement("div");
+  heart.className = "heart";
+
+  const isPurple = Math.random() < 0.3;
+
+  if (isPurple) {
+    heart.innerHTML = "💜";
+    heart.dataset.type = "good";
+  } else {
+    heart.innerHTML = "❤️";
+    heart.dataset.type = "bad";
+  }
+
+  heart.style.left = Math.random() * (game.clientWidth - 30) + "px";
+  heart.style.transform = "translateY(-20px)";
+  game.appendChild(heart);
+
+  const heartObj = { el: heart, y: -20, speed: 2.5 };
+  fallingHearts.push(heartObj);
+
+  heart.onclick = () => {
+    const idx = fallingHearts.indexOf(heartObj);
+    if (idx !== -1) fallingHearts.splice(idx, 1);
+
+    heart.style.transition = "transform 0.2s ease, opacity 0.2s ease";
+    heart.style.transform = "translateY(" + heartObj.y + "px) scale(1.5)";
+    heart.style.opacity = "0";
+
+    setTimeout(() => heart.remove(), 200);
+
+    if (heart.dataset.type === "good") {
+      score++;
+    } else {
+      wrong++;
+    }
+
+    updateScore();
+
+    if (score >= 5) showPopup();
+    if (wrong >= 3) showLosePopup();
+  };
+}
+
+// Reschedules itself each time instead of a flat setInterval, so hearts
+// don't land on a mechanical fixed beat — it speeds up a bit as she
+// scores more purple hearts (capped so it never turns unfair) and adds
+// a small random jitter.
+function scheduleNextHeart() {
+  if (!gameActive) return;
+
+  const speed = Math.max(300, 650 - score * 35);
+  const jitter = Math.random() * 200 - 100;
+  const delay = Math.max(250, speed + jitter);
+
+  heartTimer = setTimeout(() => {
+    spawnHeart();
+    scheduleNextHeart();
+  }, delay);
+}
+
+function spawnRain() {
+  const rain = document.createElement("div");
+  rain.className = "rain";
+
+  // 💜 mostly purple rain
+  rain.innerHTML = Math.random() < 0.8 ? "💜" : "❤️";
+
+  rain.style.left = Math.random() * window.innerWidth + "px";
+  rain.style.transform = "translateY(-20px)";
+  document.body.appendChild(rain);
+
+  fallingRain.push({ el: rain, y: -20, speed: 1.1 });
+}
+
+function updateScore() {
+  document.getElementById("score").innerText =
+    "Purple Hearts: " + score + " 💜 | Mistakes: " + wrong + "/3 ❤️";
+}
+
+// FIX: popups previously left spawning running underneath them — hearts
+// and rain kept piling up invisibly behind the overlay. Now spawning
+// pauses whenever a popup is up.
+function pauseSpawning() {
+  gameActive = false;
+  clearTimeout(heartTimer);
+  clearInterval(rainTimer);
+}
+
+function resumeSpawning() {
+  if (gameActive) return;
+  gameActive = true;
+  scheduleNextHeart();
+  rainTimer = setInterval(spawnRain, 120);
+}
+
+function showLosePopup() {
+  pauseSpawning();
+  const popup = document.getElementById("losePopup");
+  popup.style.display = "flex";
+  setTimeout(() => popup.classList.add("show"), 10);
+}
+
+function restartGameNow() {
+  const popup = document.getElementById("losePopup");
+
+  popup.classList.remove("show");
+
+  setTimeout(() => {
+    popup.style.display = "none";
+    score = 0;
+    wrong = 0;
+
+    fallingHearts.forEach((h) => h.el.remove());
+    fallingHearts = [];
+    game.innerHTML = ""; // safety net for any heart mid-tap-out that already left the array
+
+    updateScore();
+    resumeSpawning();
+  }, 300);
+}
+
+function showPopup() {
+  pauseSpawning();
+  const popup = document.getElementById("popup");
+  popup.style.display = "flex";
+  setTimeout(() => popup.classList.add("show"), 10);
+}
+
+function goToNextPage() {
+  window.location.href = "appreciation.html";
+}
+
+scheduleNextHeart();
+rainTimer = setInterval(spawnRain, 120);
+</script>
+
+</body>
+</html>

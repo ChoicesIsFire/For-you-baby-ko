@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For You</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #E6CCFF;
+    color: #2d1b4e;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* CURTAIN INTRO */
+#curtain {
+    position: fixed;
+    inset: 0;
+    background: #E6CCFF;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 0 30px;
+    text-align: center;
+    transition: opacity 0.8s ease;
+}
+
+#curtainText {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    color: #2d1b4e;
+}
+
+.cursor {
+    border-right: 2px solid #5e3ea1;
+    padding-right: 5px;
+}
+
+/* SKIP BUTTON on curtain */
+#skipCurtain {
+    position: absolute;
+    bottom: 28px;
+    right: 28px;
+    background: transparent;
+    border: none;
+    color: #5e3ea1;
+    opacity: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    padding: 8px 14px;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+#skipCurtain.visible {
+    opacity: 0.65;
+    pointer-events: auto;
+}
+
+#skipCurtain:hover {
+    opacity: 1;
+}
+
+/* MAIN LAYOUT */
+.wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    gap: 20px;
+    padding: 30px 20px;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+}
+
+.wrapper.show {
+    opacity: 1;
+}
+
+/* SIDE IMAGES */
+.side-img {
+    width: 180px;
+    max-width: 30vw;
+    opacity: 0.9;
+}
+
+/* CENTER BOX */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 20px;
+    text-align: center;
+    max-width: 320px;
+}
+
+/* PROGRESS */
+.progress {
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #6b4fa0;
+    margin-bottom: 8px;
+}
+
+/* STRIKE INDICATOR */
+.strikes {
+    font-size: 0.75rem;
+    color: #a1467a;
+    margin: -4px 0 14px;
+    min-height: 1em;
+    opacity: 0;
+    transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.strikes.visible {
+    opacity: 1;
+}
+
+.strikes.final {
+    color: #c0264f;
+    font-weight: 600;
+}
+
+/* TITLE */
+h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    margin: 0 0 20px;
+    line-height: 1.3;
+}
+
+/* INPUT */
+input {
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 260px;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+}
+
+input:focus {
+    outline: 2px solid #5e3ea1;
+}
+
+/* BUTTON */
+button {
+    padding: 10px 25px;
+    border: none;
+    background: #5e3ea1;
+    color: white;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.3s;
+    font-family: 'Poppins', sans-serif;
+}
+
+button:hover {
+    background: #4a2f85;
+}
+
+/* POPUP */
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.popup-content {
+    background: white;
+    color: black;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 320px;
+    width: 100%;
+}
+
+.popup img {
+    width: 150px;
+    max-width: 60vw;
+    margin-bottom: 10px;
+}
+
+.tenor-gif-embed {
+    max-width: 220px;
+    min-height: 60px;
+    margin: 0 auto 10px;
+}
+
+/* Fallback shown if the Tenor embed can't load (offline / blocked) */
+.tenor-fallback {
+    display: none;
+    font-size: 3rem;
+    margin: 0 auto 10px;
+}
+
+.tenor-fallback.visible {
+    display: block;
+}
+
+/* SORRY / TRY AGAIN BUTTON */
+.popup button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border: 2px solid #5e3ea1;
+    background: transparent;
+    color: #5e3ea1;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.popup button:hover {
+    background: #5e3ea1;
+    color: white;
+}
+
+/* 📱 Mobile */
+@media (max-width: 700px) {
+    .wrapper {
+        flex-direction: column;
+        padding: 40px 16px;
+        gap: 14px;
+    }
+    .side-img {
+        width: 110px;
+        max-width: 40vw;
+    }
+    h1 { font-size: 1.8rem; }
+    .container { margin: 0; max-width: 90vw; }
+    #skipCurtain {
+        bottom: 16px;
+        right: 16px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="curtain">
+    <span id="curtainText" class="cursor"></span>
+    <button id="skipCurtain" onclick="skipCurtain()">skip ›</button>
+</div>
+
+<div class="wrapper" id="mainWrapper">
+
+    <!-- LEFT IMAGE -->
+    <img src="CatThink.webp" class="side-img" alt="thinking cat" onerror="this.style.display='none'">
+
+    <!-- CENTER CONTENT -->
+    <div class="container">
+        <p class="progress" id="progress">Question 1 of 5</p>
+        <p class="strikes" id="strikes"></p>
+        <h1 id="question">What's my name?</h1>
+
+        <input type="text" id="answer" placeholder="First Name Middle Name Last Name">
+        <button onclick="nextQuestion()">Next</button>
+    </div>
+
+    <!-- RIGHT IMAGE -->
+    <img src="a-cartoon-cat-with-the-words-you-got-this-written-on-it-s-chest-tsb23qvdud1z18lx.gif" class="side-img" alt="you got this" onerror="this.style.display='none'">
+
+</div>
+
+<!-- WRONG ANSWER POPUP -->
+<div class="popup" id="popup">
+    <div class="popup-content">
+        <img id="gif" src="cry.gif" onerror="this.style.display='none'">
+        <p id="popupCaption">HUHU my baby doesn't know me😭</p>
+        <button onclick="closePopup()">sorry</button>
+    </div>
+</div>
+
+<!-- RESET POPUP (replaces the old browser alert()) -->
+<div class="popup" id="resetPopup">
+    <div class="popup-content">
+        <div class="tenor-gif-embed" id="tenorEmbed" data-postid="21443416" data-share-method="host" data-aspect-ratio="0.95625" data-width="100%"><a href="https://tenor.com/view/white-cat-cats-hell-yeah-cat-gif-21443416">White Cat Cats GIF</a>from <a href="https://tenor.com/search/white+cat-gifs">White Cat GIFs</a></div>
+        <div class="tenor-fallback" id="tenorFallback">💔</div>
+        <p>I'm now sad HUHUHU... let's start again 💔</p>
+        <button onclick="closeResetPopup()">okay, I'll try again</button>
+    </div>
+</div>
+
+<script>
+/* 🎬 CURTAIN INTRO — types out the message, then fades away to reveal
+   the quiz underneath. Skips itself automatically on repeat visits in
+   the same session, and offers a manual skip button either way. */
+const curtainLines = [
+    "Before we start...",
+    "I have a few questions for you."
+];
+
+const curtainText = document.getElementById("curtainText");
+const curtainEl = document.getElementById("curtain");
+const skipBtn = document.getElementById("skipCurtain");
+let curtainLineIndex = 0;
+let curtainCharIndex = 0;
+let curtainTimer = null;
+let curtainDone = false;
+
+function revealMain() {
+    if (curtainDone) return;
+    curtainDone = true;
+    clearTimeout(curtainTimer);
+    curtainEl.style.opacity = 0;
+    setTimeout(() => {
+        curtainEl.style.display = "none";
+        document.getElementById("mainWrapper").classList.add("show");
+    }, curtainEl.style.transitionDuration ? 800 : 800);
+    sessionStorage.setItem("curtainSeen", "1");
+}
+
+function skipCurtain() {
+    revealMain();
+}
+
+function typeCurtain() {
+    if (curtainLineIndex < curtainLines.length) {
+        if (curtainCharIndex < curtainLines[curtainLineIndex].length) {
+            curtainText.textContent += curtainLines[curtainLineIndex].charAt(curtainCharIndex);
+            curtainCharIndex++;
+            curtainTimer = setTimeout(typeCurtain, 45);
+        } else {
+            curtainTimer = setTimeout(() => {
+                curtainText.textContent = "";
+                curtainCharIndex = 0;
+                curtainLineIndex++;
+                typeCurtain();
+            }, 1000);
+        }
+    } else {
+        revealMain();
+    }
+}
+
+// Show the skip button shortly after load, whether or not we're
+// running the full animation.
+setTimeout(() => skipBtn.classList.add("visible"), 900);
+
+if (sessionStorage.getItem("curtainSeen")) {
+    // She's already seen the intro this session — jump straight in.
+    revealMain();
+} else {
+    typeCurtain();
+}
+
+// Each answer can be a single string OR an array of accepted phrasings —
+// e.g. a: ["with me", "beside me"] — add as many variants as you want,
+// matching now ignores punctuation, capitalization, and extra spaces.
+const questions = [
+    { q: "What's my name?", a: "moises danielle ypil tulinao" },
+    { q: "What's my favorite color?", a: "blue" },
+    { q: "What's my favorite food?", a: ["me", "humba"] },
+    { q: "Where's my favorite place to be in?", a: ["with me"] },
+    { q: "Why am I still lingering in this world?", a: ["because of me"] }
+];
+
+// A little variety in the "wrong answer" caption so it doesn't feel
+// exactly the same every single retry.
+const sorryCaptions = [
+    "HUHU my baby doesn't know me😭",
+    "wait... try again please 🥺",
+    "one more chance? pretty please 💔"
+];
+
+let index = 0;
+let wrongCount = 0;
+
+const gifs = ["cry.gif", "crying2.gif", "crying3.gif"];
+const MAX_STRIKES = 3;
+
+const questionEl = document.getElementById("question");
+const inputField = document.getElementById("answer");
+const progressEl = document.getElementById("progress");
+const strikesEl = document.getElementById("strikes");
+
+// Normalizes for comparison: trims, lowercases, strips basic punctuation,
+// and collapses double spaces so small typos don't count as "wrong".
+function normalize(str) {
+    return str
+        .trim()
+        .toLowerCase()
+        .replace(/[.,!?'"]/g, "")
+        .replace(/\s+/g, " ");
+}
+
+function updateProgress() {
+    progressEl.textContent = "Question " + (index + 1) + " of " + questions.length;
+}
+
+function updateStrikes() {
+    if (wrongCount === 0) {
+        strikesEl.classList.remove("visible", "final");
+        strikesEl.textContent = "";
+        return;
+    }
+    const left = MAX_STRIKES - wrongCount;
+    strikesEl.classList.add("visible");
+    if (left <= 0) {
+        strikesEl.textContent = "";
+    } else if (left === 1) {
+        strikesEl.classList.add("final");
+        strikesEl.textContent = "⚠ last try before we start over";
+    } else {
+        strikesEl.textContent = left + " tries left";
+    }
+}
+
+function resetStrikesForNewQuestion() {
+    wrongCount = 0;
+    updateStrikes();
+}
+
+function nextQuestion() {
+    const input = inputField.value;
+    const correct = questions[index].a;
+    const acceptedAnswers = Array.isArray(correct) ? correct : [correct];
+    const isCorrect = acceptedAnswers.map(normalize).includes(normalize(input));
+
+    if (!isCorrect) {
+        wrongCount++;
+
+        const gifIndex = Math.min(wrongCount - 1, gifs.length - 1);
+        document.getElementById("gif").src = gifs[gifIndex];
+
+        const captionIndex = Math.min(wrongCount - 1, sorryCaptions.length - 1);
+        document.getElementById("popupCaption").textContent = sorryCaptions[captionIndex];
+
+        document.getElementById("popup").style.display = "flex";
+        updateStrikes();
+    }
+
+    if (wrongCount >= MAX_STRIKES) {
+        setTimeout(() => {
+            resetQuiz();
+        }, 600);
+        return;
+    }
+
+    // Wrong answer, but still has attempts left — stay on this question
+    // so they can try again instead of skipping ahead.
+    if (!isCorrect) return;
+
+    index++;
+    resetStrikesForNewQuestion();
+
+    if (index < questions.length) {
+        questionEl.textContent = questions[index].q;
+        inputField.value = "";
+        inputField.placeholder = index === 0 ? "First Name Middle Name Last Name" : "Type your answer...";
+        updateProgress();
+        inputField.focus();
+    } else {
+        window.location.href = "main.html";
+    }
+}
+
+// Enter key submits, same as tapping Next — matters most on mobile
+// where the keyboard's return/go key is the natural way to confirm.
+inputField.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") nextQuestion();
+});
+
+function closePopup() {
+    document.getElementById("popup").style.display = "none";
+}
+
+function closeResetPopup() {
+    document.getElementById("resetPopup").style.display = "none";
+    inputField.focus();
+}
+
+function resetQuiz() {
+    index = 0;
+    wrongCount = 0;
+    updateStrikes();
+
+    questionEl.textContent = questions[0].q;
+    inputField.value = "";
+    inputField.placeholder = "First Name Middle Name Last Name";
+    updateProgress();
+
+    document.getElementById("popup").style.display = "none";
+    document.getElementById("resetPopup").style.display = "flex";
+    checkTenorFallback();
+}
+
+// If the Tenor embed script can't reach the network (offline / blocked),
+// fall back to a plain emoji instead of leaving a blank/broken box.
+function checkTenorFallback() {
+    const embed = document.getElementById("tenorEmbed");
+    const fallback = document.getElementById("tenorFallback");
+    setTimeout(() => {
+        const loaded = embed.querySelector("iframe");
+        if (!loaded) {
+            embed.style.display = "none";
+            fallback.classList.add("visible");
+        }
+    }, 2500);
+}
+</script>
+
+<!-- Loads the Tenor gif embedded in the reset popup above -->
+<script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+
+</body>
+</html>

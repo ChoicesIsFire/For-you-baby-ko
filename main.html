@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>For You 💜</title>
+
+  <!-- Cute romantic font -->
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100vh;   /* fallback for older browsers */
+      height: 100dvh;  /* FIX: real visible viewport height on mobile —
+                           100vh on iOS/Android includes the space behind
+                           the collapsible address bar, which was cutting
+                           off / shifting content on phones. dvh tracks
+                           the actual visible area. */
+      overflow: hidden;
+      background: #E6CCFF; /* Lavender */
+      font-family: 'Pacifico', cursive;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      touch-action: manipulation; /* stops double-tap-to-zoom lag while chasing the button */
+    }
+
+    /* Floating hearts */
+    .heart {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: pink;
+      transform: rotate(45deg);
+      animation: float 6s linear infinite;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .heart::before,
+    .heart::after {
+      content: '';
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: pink;
+      border-radius: 50%;
+    }
+
+    .heart::before {
+      top: -7px;
+      left: 0;
+    }
+
+    .heart::after {
+      left: -7px;
+      top: 0;
+    }
+
+    @keyframes float {
+      from {
+        transform: translateY(100vh) rotate(45deg);
+      }
+      to {
+        transform: translateY(-10vh) rotate(45deg);
+      }
+    }
+
+    h1 {
+      text-align: center;
+      color: #6a0dad;
+      margin-bottom: 20px;
+      padding: 0 24px;
+      font-size: clamp(1.3rem, 5.5vw, 2.2rem);
+      max-width: 90vw;
+      line-height: 1.4;
+    }
+
+    img {
+      width: 200px;
+      max-width: 55vw;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: 'Segoe UI', sans-serif;
+      touch-action: none; /* we handle movement ourselves */
+    }
+
+    #yes {
+      --grow: 1;
+      background: #ff69b4;
+      color: white;
+      transform: scale(var(--grow));
+      transition: transform 0.3s ease;
+    }
+
+    #yes:hover {
+      transform: scale(calc(var(--grow) * 1.1));
+    }
+
+    #no {
+      background: #444;
+      color: white;
+      transition: 0.12s linear;
+      /* position is switched to fixed via JS, only AFTER its natural
+         flex-flow spot next to #yes has been measured — see pinNoButton() */
+    }
+
+    /* Escalating taunt line under the buttons */
+    .taunt {
+      font-size: 0.85rem;
+      color: #6a0dad;
+      margin-top: 16px;
+      min-height: 1.2em;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .taunt.visible {
+      opacity: 0.85;
+    }
+
+    /* YES transition overlay: full-screen flower bloom + big YEY */
+    #yesOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(230, 204, 255, 0.97);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      overflow: hidden;
+    }
+
+    #yesOverlay.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .flower-field {
+      position: absolute;
+      inset: 0;
+    }
+
+    .flower {
+      position: absolute;
+      opacity: 0;
+      transform: scale(0) rotate(var(--rot, 0deg));
+      animation: flowerPop 0.5s ease forwards;
+    }
+
+    @keyframes flowerPop {
+      to {
+        opacity: 1;
+        transform: scale(1) rotate(var(--rot, 0deg));
+      }
+    }
+
+    .yey-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: clamp(2.2rem, 10vw, 3.5rem);
+      color: #6a0dad;
+      opacity: 0;
+      transition: transform 0.5s cubic-bezier(.68,-0.55,.27,1.55), opacity 0.4s ease;
+      white-space: nowrap;
+      z-index: 1;
+    }
+
+    .yey-text.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Before we start... I wanna ask you, do you love me?</h1>
+
+<img src="Cutecat.jpg" alt="Cute Cat" onerror="this.style.display='none'">
+
+
+<div class="button-row">
+  <button id="yes" onclick="sayYes()">Yes 💖</button>
+  <button id="no" tabindex="-1">No 😈</button>
+</div>
+
+<p class="taunt" id="taunt"></p>
+
+<!-- Reveal sequence after tapping Yes -->
+<div id="yesOverlay">
+  <div class="flower-field" id="flowerField"></div>
+  <div class="yey-text" id="yeyText">YEY! 💜</div>
+</div>
+
+<script>
+  const noBtn = document.getElementById("no");
+  const yesBtn = document.getElementById("yes");
+  const tauntEl = document.getElementById("taunt");
+  let teleportCooldown = false;
+
+  // Create floating hearts
+  for (let i = 0; i < 25; i++) {
+    let heart = document.createElement("div");
+    heart.className = "heart";
+    heart.style.left = Math.random() * window.innerWidth + "px";
+    heart.style.animationDuration = (4 + Math.random() * 4) + "s";
+    heart.style.opacity = Math.random();
+    document.body.appendChild(heart);
+  }
+
+  // FIX: dodge distance / edge padding now scale down on narrow phones.
+  // The old fixed 140px flee jump + 20px padding needed ~320px of clear
+  // width to work smoothly; on an iPhone SE-width screen that's basically
+  // the whole viewport, so the button could stall right at the edges.
+  function getDodgeMetrics() {
+    const narrow = window.innerWidth < 400;
+    return {
+      activationRadius: narrow ? 100 : 130,
+      fleeDistance: narrow ? 95 : 140,
+      padding: narrow ? 12 : 20
+    };
+  }
+
+  // The "No" button stays in normal flex flow (correctly aligned next to
+  // #yes) until the moment it first needs to dodge. Pinning it to a fixed
+  // position immediately on load was the bug: the cat image and the web
+  // font both finish loading a beat *after* the script runs, shifting the
+  // layout — #yes would settle into its final spot while #no stayed
+  // locked to the old, stale one. Pinning lazily (on first interaction)
+  // sidesteps that race entirely, since the page has settled by then.
+  let isPinned = false;
+  function pinNoButtonIfNeeded() {
+    if (isPinned) return;
+    const rect = noBtn.getBoundingClientRect();
+    noBtn.style.position = "fixed";
+    noBtn.style.left = rect.left + "px";
+    noBtn.style.top = rect.top + "px";
+    isPinned = true;
+  }
+
+  // --- Growing "Yes" button + escalating taunts ---
+  const taunts = [
+    "Nice try bae, mo move siya😏",
+    "Halaa soo close~",
+    "Bleh HAHAHA😈",
+    "Keep going,  madakpan rana!!",
+    "Ooh, almost ohh!",
+    "Joke ra, too fast for ya HEHEHE",
+    "Yes nalang I-press uys💜",
+    "SOOO persistent... Me likey",
+    "Luhh, persistent gyud diay na persistent...",
+    "Press yes nalang baby ko please"
+  ];
+
+  let growthLevel = 0;
+  const MAX_GROWTH = 10;
+  let lastGrowthTime = 0;
+  const GROWTH_COOLDOWN = 450; // ms, so rapid mousemove/touchmove firing doesn't maximize growth instantly
+
+  function updateTaunt() {
+    const line = taunts[Math.min(growthLevel - 1, taunts.length - 1)];
+    tauntEl.textContent = line;
+    tauntEl.classList.add("visible");
+  }
+
+  function handleDodgeEvent(isTouch) {
+    const now = Date.now();
+    if (now - lastGrowthTime < GROWTH_COOLDOWN) return;
+    lastGrowthTime = now;
+
+    if (growthLevel < MAX_GROWTH) {
+      growthLevel++;
+      const scale = (1 + growthLevel * 0.06).toFixed(3);
+      yesBtn.style.setProperty("--grow", scale);
+    }
+
+    updateTaunt();
+
+    if (isTouch && navigator.vibrate) {
+      navigator.vibrate(15);
+    }
+  }
+
+  // Shared dodge logic — takes a viewport-relative x/y (works for both
+  // mouse position and a finger's touch position).
+  function reactToPoint(x, y, isTouch) {
+    pinNoButtonIfNeeded();
+    const rect = noBtn.getBoundingClientRect();
+    const { activationRadius, fleeDistance, padding } = getDodgeMetrics();
+
+    const btnX = rect.left + rect.width / 2;
+    const btnY = rect.top + rect.height / 2;
+
+    const dx = x - btnX;
+    const dy = y - btnY;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < activationRadius) {
+      handleDodgeEvent(isTouch);
+
+      const angle = Math.atan2(dy, dx);
+
+      let newX = btnX - Math.cos(angle) * fleeDistance;
+      let newY = btnY - Math.sin(angle) * fleeDistance;
+
+      const blockedX = newX < padding || newX > window.innerWidth - rect.width - padding;
+      const blockedY = newY < padding || newY > window.innerHeight - rect.height - padding;
+
+      const isCornered = blockedX && blockedY;
+
+      if (isCornered && !teleportCooldown) {
+        teleportCooldown = true;
+
+        let teleportX = (btnX < window.innerWidth / 2)
+          ? window.innerWidth - rect.width - padding * 2
+          : padding * 2;
+
+        let teleportY = (btnY < window.innerHeight / 2)
+          ? window.innerHeight - rect.height - padding * 2
+          : padding * 2;
+
+        noBtn.style.transition = "none";
+        noBtn.style.left = teleportX + "px";
+        noBtn.style.top = teleportY + "px";
+
+        setTimeout(() => {
+          noBtn.style.transition = "0.12s linear";
+          teleportCooldown = false;
+        }, 200);
+
+        return;
+      }
+
+      newX = Math.max(padding, Math.min(window.innerWidth - rect.width - padding, newX));
+      newY = Math.max(padding, Math.min(window.innerHeight - rect.height - padding, newY));
+
+      noBtn.style.left = newX + "px";
+      noBtn.style.top = newY + "px";
+    }
+  }
+
+  // Desktop / trackpad — dodge as the cursor approaches.
+  document.addEventListener("mousemove", (e) => {
+    reactToPoint(e.clientX, e.clientY, false);
+  });
+
+  // Phone / tablet — there's no "hover" on touch, so a finger dragging
+  // near the button still triggers the same dodge...
+  document.addEventListener("touchmove", (e) => {
+    const touch = e.touches[0];
+    reactToPoint(touch.clientX, touch.clientY, true);
+  }, { passive: true });
+
+  // ...and a direct tap on the button jumps it away instead of
+  // "clicking" it, so tapping it never actually registers as a press.
+  noBtn.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    reactToPoint(touch.clientX, touch.clientY, true);
+  }, { passive: false });
+
+  // Keep the button from getting stranded off-screen after a rotation
+  // or resize.
+  window.addEventListener("resize", () => {
+    if (!isPinned) return; // FIX: was running rect math unconditionally
+    const rect = noBtn.getBoundingClientRect();
+    const { padding } = getDodgeMetrics();
+    const clampedX = Math.max(padding, Math.min(window.innerWidth - rect.width - padding, rect.left));
+    const clampedY = Math.max(padding, Math.min(window.innerHeight - rect.height - padding, rect.top));
+    noBtn.style.left = clampedX + "px";
+    noBtn.style.top = clampedY + "px";
+  });
+
+  // --- Yes sequence: flowers bloom in a ring around the screen, then a
+  // big YEY pops in at the center of that ring ---
+  function sayYes() {
+    const overlay = document.getElementById("yesOverlay");
+    const field = document.getElementById("flowerField");
+    const yeyText = document.getElementById("yeyText");
+
+    overlay.classList.add("show");
+
+    const flowerEmojis = ["🌸", "🌷", "🌹", "🌼", "💮", "🌻", "🥀", "🏵️", "💐"];
+    const isSmallScreen = window.innerWidth < 500;
+    const count = isSmallScreen ? 40 : 60;
+
+    // Circle geometry: based on the SMALLER of width/height so the ring
+    // is guaranteed to fully fit on screen — on a tall phone that's the
+    // width, on a wide desktop monitor that's the height. Using a fixed
+    // vw/vh split (like the old scattered version) would have let the
+    // ring get clipped on very narrow or very short screens.
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const minDim = Math.min(window.innerWidth, window.innerHeight);
+    const radius = minDim * 0.40;       // how far out the ring sits — "almost the whole screen" on the shorter axis
+    const ringThickness = minDim * 0.12; // adds a wobble so it reads as a flower wreath, not a perfect thin line
+
+    let maxDelay = 0;
+
+    for (let i = 0; i < count; i++) {
+      const flower = document.createElement("span");
+      flower.className = "flower";
+      flower.textContent = flowerEmojis[Math.floor(Math.random() * flowerEmojis.length)];
+
+      // Evenly spaced around the circle, with a little jitter on both
+      // angle and radius so the ring looks organic rather than a
+      // perfectly mechanical dotted line.
+      const baseAngle = (i / count) * Math.PI * 2;
+      const angle = baseAngle + (Math.random() - 0.5) * ((Math.PI * 2) / count) * 0.7;
+      const r = radius + (Math.random() - 0.5) * ringThickness;
+
+      const x = centerX + Math.cos(angle) * r;
+      const y = centerY + Math.sin(angle) * r;
+
+      const size = isSmallScreen ? 1.1 + Math.random() * 1.3 : 1.4 + Math.random() * 1.8; // rem
+      const rotate = Math.random() * 360;
+      // Delay follows position around the circle, so the ring visibly
+      // "draws" itself in a sweep rather than popping in all at once.
+      const delay = (i / count) * 900 + Math.random() * 120; // ms
+
+      flower.style.left = x + "px";
+      flower.style.top = y + "px";
+      flower.style.fontSize = size + "rem";
+      flower.style.animationDelay = delay + "ms";
+      flower.style.setProperty("--rot", rotate + "deg");
+
+      field.appendChild(flower);
+      maxDelay = Math.max(maxDelay, delay);
+    }
+
+    const bloomDuration = maxDelay + 500; // last flower's delay + its own pop-in time
+
+    setTimeout(() => {
+      yeyText.classList.add("show");
+    }, bloomDuration);
+
+    setTimeout(() => {
+      window.location.href = "home.html";
+    }, bloomDuration + 1400);
+  }
+</script>
+
+</body>
+</html>
