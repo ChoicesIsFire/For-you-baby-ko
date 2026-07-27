@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>For You ❤️</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
@@ -10,15 +10,13 @@
 <style>
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 html, body {
   margin: 0;
-  height: 100vh;   /* fallback for older browsers */
-  height: 100dvh;  /* FIX: matches the real visible viewport on mobile,
-                       so the page can't grow taller than the screen and
-                       trigger a scrollbar despite overflow:hidden below */
-  overflow: hidden;
+  min-height: 100vh;   /* fallback */
+  min-height: 100dvh;  /* matches the real visible viewport on mobile */
 }
 
 body {
@@ -27,41 +25,44 @@ body {
   font-family: 'Segoe UI', sans-serif;
   color: #f5e6ff;
   touch-action: manipulation; /* snappier taps on mobile, no double-tap zoom delay */
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;  /* only guards against horizontal scroll from rain/hearts near edges */
+  overflow-y: auto;    /* if a very short/wide phone can't fit everything, it scrolls instead of clipping content */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* ✨ Title */
+/* ✨ Title — clamp() keeps this readable from small phones to tablets */
 h1 {
-  margin-top: 30px;
+  margin: 24px 12px 0;
   font-family: 'Pacifico', cursive;
-  font-size: 38px;
+  font-size: clamp(22px, 6.5vw, 38px);
   color: #d9b3ff;
   text-shadow: 0 0 10px rgba(217,179,255,0.8);
 }
 
 /* ✨ Subtitle */
 p {
-  margin-top: -5px;
+  margin: 6px 12px 0;
   color: #e6ccff;
-  font-size: 16px;
+  font-size: clamp(13px, 3.6vw, 16px);
 }
 
 /* ✨ Score */
 #score {
   font-weight: bold;
-  margin-top: 10px;
+  margin: 10px 12px 0;
   color: #ffffff;
   text-shadow: 0 0 8px rgba(255,255,255,0.6);
+  font-size: clamp(13px, 3.6vw, 17px);
 }
 
 #game {
-  position: relative; /* FIX: hearts are absolutely positioned inside this
-                          box — without this, "absolute" was resolving
-                          against the whole page, so hearts fell from
-                          behind the title/score text instead of from the
-                          top of the play area */
-  overflow: hidden;   /* FIX: keeps hearts from visually spilling out of
-                          the game box once they pass its bottom edge */
-  height: 60vh;
+  position: relative; /* hearts are absolutely positioned inside this box */
+  overflow: hidden;    /* keeps hearts from visually spilling out of the play area */
+  flex: 1 1 auto;      /* grows/shrinks to fill whatever space is left on any phone size */
+  min-height: 220px;
+  margin-top: 10px;
 }
 
 /* 💜 Hearts */
@@ -76,18 +77,19 @@ p {
   cursor: pointer;
   top: 0;
   left: 0;
-  will-change: transform;
-  transition: opacity 0.2s; /* transform no longer transitions continuously —
-                               that was fighting the per-frame position
-                               updates and made falling look laggy; a
-                               one-off transition is applied only at the
-                               moment of the tap "pop" effect, in JS */
+  will-change: transform, opacity;
   touch-action: manipulation;
 }
 
-/* 🌧 Purple rain */
+/* Tap animation: pop + fade, applied only at the moment of catching */
+.heart.caught {
+  transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+  transform-origin: center;
+}
+
+/* 🌧 Purple rain — fixed instead of absolute so it never affects page/scroll height */
 .rain {
-  position: absolute;
+  position: fixed;
   font-size: 20px;
   opacity: 0.25;
   top: 0;
@@ -109,8 +111,7 @@ p {
   align-items: center;
   opacity: 0;
   transition: opacity 0.3s;
-  z-index: 999; /* FIX: made explicit instead of relying on DOM order to
-                   stack above the falling hearts/rain */
+  z-index: 999;
 }
 
 .popup.show {
@@ -121,11 +122,9 @@ p {
 .popup-box {
   background: linear-gradient(145deg, #2a004d, #3b0066);
   color: #f5e6ff;
-  padding: 30px;
+  padding: clamp(20px, 5vw, 30px);
   border-radius: 20px;
-  width: 320px;
-  max-width: 85vw;
-  box-sizing: border-box;
+  width: clamp(260px, 85vw, 320px);
   text-align: center;
   transform: scale(0.9);
   transition: transform 0.3s;
@@ -139,6 +138,39 @@ p {
 .popup-box h2 {
   color: #d9b3ff;
   font-family: 'Pacifico', cursive;
+  font-size: clamp(20px, 5.5vw, 27px);
+  margin-top: 0;
+}
+
+.popup-box p {
+  font-size: clamp(13px, 3.6vw, 16px);
+  color: #f5e6ff;
+  margin: 0;
+}
+
+/* ✨ Milestone toast */
+#milestone {
+  position: fixed;
+  top: 14%;
+  left: 50%;
+  transform: translate(-50%, -16px);
+  background: linear-gradient(145deg, #2a004d, #3b0066);
+  color: #f5e6ff;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: clamp(13px, 4vw, 17px);
+  box-shadow: 0 0 20px rgba(186, 85, 211, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 998;
+  max-width: 85vw;
+  text-align: center;
+}
+
+#milestone.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 /* 💖 Button */
@@ -152,6 +184,7 @@ button {
   cursor: pointer;
   transition: 0.2s;
   touch-action: manipulation;
+  font-size: clamp(13px, 3.6vw, 16px);
 }
 
 button:hover {
@@ -169,6 +202,7 @@ button:hover {
 <p id="score">Purple Hearts: 0 💜 | Mistakes: 0/3 ❤️</p>
 
 <div id="game"></div>
+<div id="milestone"></div>
 
 <!-- 💖 WIN POPUP -->
 <div id="popup" class="popup">
@@ -187,7 +221,7 @@ button:hover {
 <!-- 💔 LOSE POPUP -->
 <div id="losePopup" class="popup">
   <div class="popup-box">
-    <h2>Aww 😢</h2>
+    <h2>Nyok Nyok 😢</h2>
     <p>
       Mga lahi na hearts gipang press huhu...💔<br>
       Focus on me bae💜
@@ -202,26 +236,31 @@ let wrong = 0;
 let gameActive = true;
 
 const game = document.getElementById("game");
+const milestoneEl = document.getElementById("milestone");
+
+// Performance cap: never let more purple/red hearts pile up on screen
+// than this at once. Keeps the animation loop and DOM light on lower-end
+// phones no matter how long the round runs.
+const MAX_HEARTS = 10;
+
+// Milestones show a quick encouraging toast without interrupting play.
+// The final one is the real reward — it triggers the win popup + unlock.
+const MILESTONES = {
+  3: "3 purple hearts... you're on a roll baby 💜",
+  6: "6! Gamay nalang kulang baby ko!! Keep going 💜"
+};
+const WIN_SCORE = 9;
 
 let heartTimer = null;
 let rainTimer = null;
+let milestoneTimer = null;
 
-// FIX (the "drop rate slows down" bug): the old version gave every
-// single heart and rain drop its own setInterval that read
-// el.offsetTop and wrote el.style.top every 20ms. Reading offsetTop
-// forces the browser to recompute the page's layout right then and
-// there — fine with two or three hearts on screen, but once a dozen+
-// pile up (which happens more the longer you play now, since spawn
-// rate speeds up with score), all those forced layout recalculations
-// stack up and the browser's main thread can't keep up — so
-// everything visually stutters and looks like it's slowing down.
-//
-// Fix: a single requestAnimationFrame loop now drives every heart and
-// rain drop's position together, using elapsed time (not tick count)
-// so speed stays consistent even if a frame gets dropped, and moving
-// them with CSS `transform` instead of `top` so the browser can
-// animate them on the compositor without touching layout at all — this
-// scales to far more hearts on screen without stuttering.
+// A single requestAnimationFrame loop drives every heart and rain drop's
+// position together, using elapsed time (not tick count) so speed stays
+// consistent even if a frame gets dropped, and moving them with CSS
+// `transform` instead of `top`/`offsetTop` so the browser can animate them
+// on the compositor without touching layout — this is what keeps things
+// smooth even with several hearts on screen at once.
 let fallingHearts = []; // { el, y, speed }
 let fallingRain = [];   // { el, y, speed }
 let lastFrameTime = null;
@@ -260,6 +299,11 @@ function tick(now) {
 requestAnimationFrame(tick);
 
 function spawnHeart() {
+  // Perf cap: skip this spawn if we're already at the limit. The
+  // scheduler still keeps ticking, so a heart will appear again as
+  // soon as room opens up (one gets caught or falls off screen).
+  if (fallingHearts.length >= MAX_HEARTS) return;
+
   const heart = document.createElement("div");
   heart.className = "heart";
 
@@ -273,7 +317,7 @@ function spawnHeart() {
     heart.dataset.type = "bad";
   }
 
-  heart.style.left = Math.random() * (game.clientWidth - 44) + "px"; // 44 matches the new hit-box width below
+  heart.style.left = Math.random() * Math.max(0, game.clientWidth - 44) + "px";
   heart.style.transform = "translateY(-20px)";
   game.appendChild(heart);
 
@@ -282,8 +326,7 @@ function spawnHeart() {
 
   // Guards against a single tap counting twice — once from the real
   // touch, once from the browser's delayed synthetic click that can
-  // follow it. Without this, one tap could occasionally register on
-  // more than one heart.
+  // follow it.
   let handled = false;
   function catchHeart() {
     if (handled) return;
@@ -292,11 +335,14 @@ function spawnHeart() {
     const idx = fallingHearts.indexOf(heartObj);
     if (idx !== -1) fallingHearts.splice(idx, 1);
 
-    heart.style.transition = "transform 0.2s ease, opacity 0.2s ease";
+    // Tap animation: pop + fade out, then remove from the DOM once it's done.
+    heart.classList.add("caught");
     heart.style.transform = "translateY(" + heartObj.y + "px) scale(1.5)";
     heart.style.opacity = "0";
 
-    setTimeout(() => heart.remove(), 200);
+    heart.addEventListener("transitionend", () => heart.remove(), { once: true });
+    // Safety net in case transitionend doesn't fire (e.g. tab backgrounded)
+    setTimeout(() => heart.remove(), 400);
 
     if (heart.dataset.type === "good") {
       score++;
@@ -306,15 +352,11 @@ function spawnHeart() {
 
     updateScore();
 
-    if (score >= 5) showPopup();
+    if (MILESTONES[score]) showMilestone(MILESTONES[score]);
+    if (score >= WIN_SCORE) showPopup();
     if (wrong >= 3) showLosePopup();
   }
 
-  // Touch fires immediately (no ~300ms click delay), and preventDefault
-  // stops the browser from ALSO firing a delayed synthetic click
-  // afterward — that double-firing, combined with the small 28px hit
-  // target, was the actual cause of a single tap sometimes registering
-  // as a miss or landing on more than one heart.
   heart.addEventListener("touchstart", (e) => {
     e.preventDefault();
     catchHeart();
@@ -330,7 +372,7 @@ function spawnHeart() {
 function scheduleNextHeart() {
   if (!gameActive) return;
 
-  const speed = Math.max(300, 650 - score * 35);
+  const speed = Math.max(300, 650 - score * 15);
   const jitter = Math.random() * 200 - 100;
   const delay = Math.max(250, speed + jitter);
 
@@ -341,12 +383,12 @@ function scheduleNextHeart() {
 }
 
 function spawnRain() {
+  // Same perf cap idea for the background rain drops.
+  if (fallingRain.length >= MAX_HEARTS * 2) return;
+
   const rain = document.createElement("div");
   rain.className = "rain";
-
-  // 💜 mostly purple rain
   rain.innerHTML = Math.random() < 0.8 ? "💜" : "❤️";
-
   rain.style.left = Math.random() * window.innerWidth + "px";
   rain.style.transform = "translateY(-20px)";
   document.body.appendChild(rain);
@@ -359,9 +401,16 @@ function updateScore() {
     "Purple Hearts: " + score + " 💜 | Mistakes: " + wrong + "/3 ❤️";
 }
 
-// FIX: popups previously left spawning running underneath them — hearts
-// and rain kept piling up invisibly behind the overlay. Now spawning
-// pauses whenever a popup is up.
+function showMilestone(text) {
+  clearTimeout(milestoneTimer);
+  milestoneEl.textContent = text;
+  milestoneEl.classList.add("show");
+  milestoneTimer = setTimeout(() => milestoneEl.classList.remove("show"), 2200);
+}
+
+// Popups previously left spawning running underneath them — hearts and
+// rain kept piling up invisibly behind the overlay. Spawning now pauses
+// whenever a popup is up.
 function pauseSpawning() {
   gameActive = false;
   clearTimeout(heartTimer);
