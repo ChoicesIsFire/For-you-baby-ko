@@ -184,26 +184,18 @@ h1 {
   font-style: italic;
 }
 
-/* Letter */
+/* Letter — now sits inside .letter-modal, which supplies its own
+   background/shadow/rounded corners, so this only needs typography */
 .letter {
-  max-width: 700px;
-  margin: 40px auto 10px;
-  padding: 25px;
-  background: rgba(255,255,255,0.55);
-  border-radius: 15px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
   line-height: 1.8;
   color: #4a1942;
-  opacity: 0;
-  transition: 2s;
   position: relative;
   z-index: 1;
   cursor: pointer;
 }
 
 .skip-hint {
-  max-width: 700px;
-  margin: 8px auto 0;
+  margin: 8px 0 0;
   font-size: 13px;
   font-style: italic;
   color: #a4568a;
@@ -215,8 +207,7 @@ h1 {
 
 /* Closing signature */
 .closing {
-  max-width: 500px;
-  margin: 50px auto 100px;
+  margin: 34px 0 0;
   font-family: 'Dancing Script', cursive;
   font-size: 22px;
   color: #7a2a5e;
@@ -247,6 +238,260 @@ h1 {
   padding-right: 5px;
 }
 
+/* 🎁 Gift box + letter modal */
+.gift-section {
+  max-width: 700px;
+  margin: 70px auto 110px;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 1.1s ease, transform 1.1s ease;
+}
+
+.gift-section.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gift-prompt {
+  font-family: 'Dancing Script', cursive;
+  font-size: 26px;
+  color: #c2226e;
+  margin: 0 0 30px;
+  animation: giftPromptGlow 3.4s ease-in-out infinite;
+}
+
+@keyframes giftPromptGlow {
+  0%, 100% { text-shadow: 0 0 12px rgba(255,150,210,0.35); }
+  50%      { text-shadow: 0 0 22px rgba(255,120,200,0.65); }
+}
+
+.gift-box {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gift-box:focus-visible {
+  outline: 2px solid #d6337a;
+  outline-offset: 8px;
+  border-radius: 16px;
+}
+
+.gift-glow {
+  position: absolute;
+  inset: -26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,150,210,0.55), transparent 70%);
+  opacity: 0.35;
+  animation: giftGlowPulse 3s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes giftGlowPulse {
+  0%, 100% { opacity: 0.32; transform: scale(1); }
+  50%      { opacity: 0.68; transform: scale(1.12); }
+}
+
+.gift-base {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 74px;
+  background: linear-gradient(155deg, #ff9ad1, #d6337a);
+  border-radius: 10px;
+  box-shadow: 0 16px 28px rgba(74,25,66,0.22);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.gift-base::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 16px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fff2f8, #ffd9ec);
+}
+
+.gift-lid {
+  position: absolute;
+  top: 34px;
+  left: -4px;
+  right: -4px;
+  height: 30px;
+  background: linear-gradient(155deg, #ff7fc0, #c2226e);
+  border-radius: 10px 10px 6px 6px;
+  box-shadow: 0 8px 16px rgba(74,25,66,0.2);
+  transform-origin: 50% 100%;
+  transition: transform 0.65s cubic-bezier(.34,1.56,.64,1);
+  z-index: 3;
+}
+
+.gift-lid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 16px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fff2f8, #ffd9ec);
+}
+
+.gift-bow {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 30px;
+  filter: drop-shadow(0 4px 6px rgba(74,25,66,0.25));
+}
+
+.gift-box:not(.opening):not(.opened) {
+  animation: giftBounce 2.6s ease-in-out infinite;
+}
+
+@keyframes giftBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+
+.gift-box.opening .gift-lid {
+  transform: translateY(-48px) rotate(-16deg);
+}
+
+.gift-box.opened .gift-lid {
+  transform: translateY(-13px) rotate(-9deg);
+}
+
+.gift-box.opening .gift-base {
+  animation: giftPop 0.5s ease;
+}
+
+@keyframes giftPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.gift-box.opening .gift-glow,
+.gift-box.opened .gift-glow {
+  opacity: 0.72;
+}
+
+.gift-box.opening::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), transparent 70%);
+  animation: giftFlash 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 4;
+}
+
+@keyframes giftFlash {
+  0%   { opacity: 0;    transform: scale(0.6); }
+  40%  { opacity: 0.85; transform: scale(1.15); }
+  100% { opacity: 0;    transform: scale(1.4); }
+}
+
+.gift-reopen-hint {
+  margin: 22px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: #a4568a;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.gift-reopen-hint.show { opacity: 1; }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 25, 66, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+  z-index: 80;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.5s ease, visibility 0s linear 0s;
+}
+
+.letter-modal {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  max-height: 82vh;
+  background: rgba(255,255,255,0.94);
+  border-radius: 22px;
+  box-shadow: 0 24px 55px rgba(74,25,66,0.3), 0 0 45px rgba(255,150,210,0.25);
+  padding: 42px 32px 32px;
+  transform: translateY(26px) scale(0.94);
+  opacity: 0;
+  transition: transform 0.55s cubic-bezier(.22,1,.36,1), opacity 0.55s ease;
+}
+
+.modal-overlay.show .letter-modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.letter-scroll {
+  max-height: calc(82vh - 74px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,143,199,0.18);
+  color: #c2226e;
+  font-size: 15px;
+  line-height: 34px;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+  z-index: 2;
+}
+
+.modal-close:hover  { background: rgba(255,143,199,0.32); transform: scale(1.08); }
+.modal-close:active { transform: scale(0.92); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-box:not(.opening):not(.opened),
+  .gift-glow,
+  .gift-prompt {
+    animation: none;
+  }
+}
+
 /* 📱 Mobile */
 @media (max-width: 900px) {
   .photo-grid { column-count: 3; }
@@ -268,8 +513,13 @@ h1 {
     margin: 0 auto;
   }
   .chapter { margin: 40px auto; padding: 0 18px; }
-  .letter { margin: 30px 16px 10px; padding: 18px; font-size: 15px; }
-  .closing { margin: 40px auto 80px; font-size: 19px; }
+  .letter { font-size: 15px; }
+  .closing { margin: 26px 0 0; font-size: 19px; }
+  .gift-section { margin: 50px auto 90px; }
+  .gift-box { width: 108px; height: 108px; }
+  .gift-base { height: 62px; }
+  .gift-lid { top: 28px; height: 26px; }
+  .letter-modal { padding: 34px 20px 24px; border-radius: 18px; }
 }
 </style>
 </head>
@@ -288,13 +538,34 @@ h1 {
 
 <div id="mainContent"></div>
 
-<div class="letter" id="letter"></div>
-<p class="skip-hint" id="skipHint">tap the letter to read it all at once ✨</p>
+<section class="gift-section" id="giftSection">
+  <p class="gift-prompt">I have something for you 💜</p>
 
-<div class="closing" id="closing">
-  <div class="closing-divider">🌸 🌷 🌸</div>
-  <p>Forever yours,<br><strong id="signatureName">— Your one and only Tsubae —</strong></p>
-  <p class="closing-date" id="closingDate"></p>
+  <div class="gift-box" id="giftBox" tabindex="0" role="button" aria-label="Open your gift">
+    <div class="gift-glow"></div>
+    <div class="gift-lid">
+      <span class="gift-bow">🎀</span>
+    </div>
+    <div class="gift-base"></div>
+  </div>
+
+  <p class="gift-reopen-hint" id="reopenHint">You can open it again anytime 💜</p>
+</section>
+
+<div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+  <div class="letter-modal" id="letterModal" role="dialog" aria-modal="true" aria-label="A letter for you">
+    <button class="modal-close" id="modalClose" aria-label="Close letter">✕</button>
+    <div class="letter-scroll">
+      <div class="letter" id="letter"></div>
+      <p class="skip-hint" id="skipHint">tap the letter to read it all at once ✨</p>
+
+      <div class="closing" id="closing">
+        <div class="closing-divider">🌸 🌷 🌸</div>
+        <p>Forever yours,<br><strong id="signatureName">— Your one and only Tsubae —</strong></p>
+        <p class="closing-date" id="closingDate"></p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <audio id="bgMusic" src="SUD - Baliw (Official Music Video).mp3" loop autoplay preload="metadata"></audio>
@@ -378,8 +649,6 @@ function startMain() {
 
   const photoContainerFor = buildChapters();
   loadPhotos(photoContainerFor);
-
-  showLetter();
 }
 
 /* 🎵 MUSIC — integrated, auto-plays and loops on load.
@@ -611,47 +880,9 @@ I love you so so much my beautiful baby girl! 💞💝<br>
 Hoping many many more memories to come and make together with you! <br>
 And remember bae... Sayo lng na baliw baby ko. 😘<br><br>`;
 
-function showLetter() {
-  const letter = document.getElementById("letter");
-  const skipHint = document.getElementById("skipHint");
-  letter.style.opacity = 1;
-
-  let i = 0;
-  let skipped = false;
-
-  function finish() {
-    if (skipped) return;
-    skipped = true;
-    letter.innerHTML = letterText;
-    skipHint.style.opacity = 0;
-    revealClosing();
-  }
-
-  letter.addEventListener("click", finish);
-
-  function type() {
-    if (skipped) return;
-
-    if (i <= letterText.length) {
-      // Rebuilds from the ORIGINAL source string each tick instead of
-      // appending to innerHTML, so <br> tags parse correctly every time.
-      letter.innerHTML = letterText.substring(0, i);
-      i++;
-      setTimeout(type, 25);
-    } else {
-      skipped = true;
-      skipHint.style.opacity = 0;
-      revealClosing();
-    }
-  }
-
-  // A subtle hint appears if they haven't tapped to skip by then
-  setTimeout(() => {
-    if (!skipped) skipHint.style.opacity = 1;
-  }, 3000);
-
-  setTimeout(type, 2000);
-}
+/* Typing logic now lives in typeLetter() below, in the
+   "🎁 GIFT BOX + LETTER MODAL" section — it's triggered by opening
+   the gift instead of running automatically after the photos load. */
 
 /* 🌷 CLOSING SIGNATURE */
 function revealClosing() {
@@ -662,6 +893,136 @@ function revealClosing() {
     document.getElementById("closing").classList.add("show");
   }, 400);
 }
+
+/* 🎁 GIFT BOX + LETTER MODAL
+   The letter now lives behind a gift box instead of auto-playing after
+   the photos. The first tap plays the box-opening animation, dims and
+   blurs the page behind it, then types the letter out. Later taps just
+   reopen the same letter instantly (already typed in full) — so
+   rereading it never means sitting through the typewriter again. */
+const giftBox = document.getElementById("giftBox");
+const modalOverlay = document.getElementById("modalOverlay");
+const modalClose = document.getElementById("modalClose");
+const reopenHint = document.getElementById("reopenHint");
+const letterEl = document.getElementById("letter");
+const skipHintEl = document.getElementById("skipHint");
+
+let letterTyped = false;
+let typingTimer = null;
+
+function typeLetter() {
+  let i = 0;
+  let skipped = false;
+
+  function finish() {
+    if (skipped) return;
+    skipped = true;
+    clearTimeout(typingTimer);
+    letterEl.innerHTML = letterText;
+    skipHintEl.style.opacity = 0;
+    revealClosing();
+  }
+
+  letterEl.addEventListener("click", finish);
+
+  function type() {
+    if (skipped) return;
+
+    if (i <= letterText.length) {
+      // Rebuilds from the ORIGINAL source string each tick instead of
+      // appending to innerHTML, so <br> tags parse correctly every time.
+      letterEl.innerHTML = letterText.substring(0, i);
+      i++;
+      typingTimer = setTimeout(type, 25);
+    } else {
+      skipped = true;
+      skipHintEl.style.opacity = 0;
+      revealClosing();
+    }
+  }
+
+  // A subtle hint appears if they haven't tapped to skip by then
+  setTimeout(() => {
+    if (!skipped) skipHintEl.style.opacity = 1;
+  }, 1400);
+
+  typingTimer = setTimeout(type, 350);
+}
+
+function openGift() {
+  const alreadyOpened = giftBox.classList.contains("opened");
+
+  if (!alreadyOpened) {
+    // First-ever open: play the lid-opening + sparkle animation, then
+    // settle into the "opened" resting pose before the letter appears.
+    giftBox.classList.add("opening");
+    setTimeout(() => {
+      giftBox.classList.remove("opening");
+      giftBox.classList.add("opened");
+      showLetterModal();
+    }, 550);
+  } else {
+    // Already opened before — no need to replay the box animation,
+    // just bring the letter back.
+    showLetterModal();
+  }
+}
+
+function showLetterModal() {
+  modalOverlay.classList.add("show");
+  modalOverlay.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+
+  if (!letterTyped) {
+    letterTyped = true;
+    typeLetter();
+  } else {
+    letterEl.innerHTML = letterText;
+    skipHintEl.style.opacity = 0;
+    revealClosing();
+  }
+}
+
+function closeLetterModal() {
+  clearTimeout(typingTimer);
+  modalOverlay.classList.remove("show");
+  modalOverlay.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  reopenHint.classList.add("show");
+}
+
+giftBox.addEventListener("click", openGift);
+giftBox.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    openGift();
+  }
+});
+
+modalClose.addEventListener("click", closeLetterModal);
+
+// Tapping the dimmed backdrop (not the card itself) also closes it
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) closeLetterModal();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && modalOverlay.classList.contains("show")) {
+    closeLetterModal();
+  }
+});
+
+// Fades the gift section in once, the first time it scrolls into view
+const giftObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add("show");
+      giftObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.2 });
+
+giftObserver.observe(document.getElementById("giftSection"));
 
 /* 📊 SCROLL PROGRESS BAR */
 window.addEventListener("scroll", () => {
