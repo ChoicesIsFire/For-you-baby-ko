@@ -67,6 +67,11 @@ p {
 /* 💜 Hearts */
 .heart {
   position: absolute;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 28px;
   cursor: pointer;
   top: 0;
@@ -268,14 +273,22 @@ function spawnHeart() {
     heart.dataset.type = "bad";
   }
 
-  heart.style.left = Math.random() * (game.clientWidth - 30) + "px";
+  heart.style.left = Math.random() * (game.clientWidth - 44) + "px"; // 44 matches the new hit-box width below
   heart.style.transform = "translateY(-20px)";
   game.appendChild(heart);
 
   const heartObj = { el: heart, y: -20, speed: 2.5 };
   fallingHearts.push(heartObj);
 
-  heart.onclick = () => {
+  // Guards against a single tap counting twice — once from the real
+  // touch, once from the browser's delayed synthetic click that can
+  // follow it. Without this, one tap could occasionally register on
+  // more than one heart.
+  let handled = false;
+  function catchHeart() {
+    if (handled) return;
+    handled = true;
+
     const idx = fallingHearts.indexOf(heartObj);
     if (idx !== -1) fallingHearts.splice(idx, 1);
 
@@ -295,7 +308,19 @@ function spawnHeart() {
 
     if (score >= 5) showPopup();
     if (wrong >= 3) showLosePopup();
-  };
+  }
+
+  // Touch fires immediately (no ~300ms click delay), and preventDefault
+  // stops the browser from ALSO firing a delayed synthetic click
+  // afterward — that double-firing, combined with the small 28px hit
+  // target, was the actual cause of a single tap sometimes registering
+  // as a miss or landing on more than one heart.
+  heart.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    catchHeart();
+  }, { passive: false });
+
+  heart.onclick = catchHeart;
 }
 
 // Reschedules itself each time instead of a flat setInterval, so hearts

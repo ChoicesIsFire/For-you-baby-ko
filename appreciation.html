@@ -59,6 +59,8 @@ body {
 /* Intro */
 #intro {
   height: 100vh;
+  height: 100dvh; /* real visible viewport height on mobile — matches
+                      the same fix already used on the other pages */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -154,6 +156,15 @@ h1 {
   border-radius: 15px;
   display: block;
   animation: float 6s ease-in-out infinite, glow 3s ease-in-out infinite;
+}
+
+/* Only animate photos that are actually visible — this pair
+   (float uses transform, cheap; glow animates box-shadow, which forces
+   a repaint) was previously running on all 40 photos at once even when
+   most were scrolled off-screen. Piggybacks on the same .show class the
+   scroll observer below already toggles. */
+.photo-wrap:not(.show) .photo {
+  animation-play-state: paused;
 }
 
 @keyframes float {
@@ -286,7 +297,7 @@ h1 {
   <p class="closing-date" id="closingDate"></p>
 </div>
 
-<audio id="bgMusic" src="SUD - Baliw (Official Music Video).mp3" loop autoplay preload="auto"></audio>
+<audio id="bgMusic" src="SUD - Baliw (Official Music Video).mp3" loop autoplay preload="metadata"></audio>
 
 <script>
 
@@ -493,6 +504,12 @@ function loadPhotos(photoContainerFor) {
 
     const img = document.createElement("img");
     img.className = "photo";
+    // Defers the actual image download until it's about to scroll into
+    // view, and lets decoding happen off the main thread — with 40
+    // photos on one page this is the single biggest weight-saver, since
+    // pictures nobody scrolls down to see never get downloaded at all.
+    img.loading = "lazy";
+    img.decoding = "async";
     // Descriptive alt text ties the photo to its chapter instead of
     // a bare number, e.g. "Memory 3 from Our Cute Little Memories Together".
     img.alt = info
@@ -555,7 +572,7 @@ function startFlowerRain() {
     petal.addEventListener("animationend", () => petal.remove(), { once: true });
   }
 
-  const rainInterval = setInterval(spawnPetal, 300);
+  let rainInterval = setInterval(spawnPetal, 300);
 
   // Pause spawning while the tab/screen is hidden, resume when it's
   // visible again — avoids piling up work (and battery drain) for a
@@ -563,6 +580,8 @@ function startFlowerRain() {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       clearInterval(rainInterval);
+    } else {
+      rainInterval = setInterval(spawnPetal, 300);
     }
   });
 }
@@ -572,22 +591,25 @@ const letterText = `For all the missed gifts and special days… 💔🎁<br><br
 I thought about it for a while, and this is the idea I kept coming back to. It might be small, but I hope it says what I mean.<br><br>
 You're mature, quiet in your own way, serious on the outside but so soft underneath.<br>
 But I know a version of you almost no one else gets to see... the wild side, the talkative side, even when you get a little angry hehe.<br>
+Andd the many other sides that I only get to see. 💜<br>
 I love that you let your guard down like that only with me. 💜<br><br>
-I still think about that day at Abellana, when I was going through it and you just listened.<br>
-You didn't try to fix everything... you just stayed, and comforted me. 🤍<br><br>
-And I'll never forget asking you to let me court you, and hearing you say yes.<br>
-Or the day I asked you to be my girlfriend... and you said yes again. ✨<br>
-Both times my heart was so loud I could barely think straight.<br><br>
-But what I'm most proud of... is when you told me your problems too.<br>
+I will always remember that day at Abellana, when I was going through something... something heavy and you were there, listening.<br>
+You didn't try to fix everything... you just stayed, and comforted me. 🤍<br>
+I was truly grateful to have someone who listened to me without juding me. So thank you baby ko! 💜<br><br>
+And I'll also never forget the day where I ask to let me court you, and hearing you say yes.<br>
+And also the day I asked you to be my girlfriend... and you said yes again. ✨<br>
+Both times my heart was so loud I could barely think straight. You may have not notice HEHEHE. 😝<br><br>
+But one thing I'm proud of... is when you were became comfortable enough towards me to the point that you were okay to tell me your problems too.<br>
 Because that's when I felt like I was really part of your life, not just someone watching from the side. 💜<br><br>
-I know I'm not perfect…<br>
-and I know I've hurt you sometimes… 😞<br><br>
+I know I'm not perfect… Not even close...<br>
+And I know that I've hurt you multiple times too… 😞<br><br>
 But thank you…<br>
-For choosing to stay by my side always baby ko. 🤍🥺<br><br>
-Because no matter what happens... it was always you. 💜🌹<br><br>
-And if I could do everything again... I will still choose you. I always will forever. 🫂🌹<br><br>
-I love you so so much my beautiful baby girl! 💞💝<br><br>
-And remember bae... Sayo lng na baliw😘<br><br>`;
+For choosing to stay by my side always baby ko. Even if it sometimes becomes hard. 🤍🥺<br><br>
+Because no matter what happened... it was always you who stayed by me and comforted me. 💜🌹<br>
+And if I could do everything again... I will still choose you. I always will forever. 🫂🌹<br>
+I love you so so much my beautiful baby girl! 💞💝<br>
+Hoping many many more memories to come and make together with you! <br>
+And remember bae... Sayo lng na baliw baby ko. 😘<br><br>`;
 
 function showLetter() {
   const letter = document.getElementById("letter");

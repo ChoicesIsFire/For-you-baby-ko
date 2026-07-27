@@ -367,16 +367,36 @@
     }
   }
 
+  // Batches rapid mousemove/touchmove events to once per animation frame —
+  // on mobile, touchmove can fire far more often than the screen redraws,
+  // so running the dodge math on every single event was more work than
+  // needed and showed up as lag.
+  let pendingPoint = null;
+  let pendingIsTouch = false;
+  let rafScheduled = false;
+
+  function scheduleDodge(x, y, isTouch) {
+    pendingPoint = { x, y };
+    pendingIsTouch = isTouch;
+    if (!rafScheduled) {
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        rafScheduled = false;
+        if (pendingPoint) reactToPoint(pendingPoint.x, pendingPoint.y, pendingIsTouch);
+      });
+    }
+  }
+
   // Desktop / trackpad — dodge as the cursor approaches.
   document.addEventListener("mousemove", (e) => {
-    reactToPoint(e.clientX, e.clientY, false);
+    scheduleDodge(e.clientX, e.clientY, false);
   });
 
   // Phone / tablet — there's no "hover" on touch, so a finger dragging
   // near the button still triggers the same dodge...
   document.addEventListener("touchmove", (e) => {
     const touch = e.touches[0];
-    reactToPoint(touch.clientX, touch.clientY, true);
+    scheduleDodge(touch.clientX, touch.clientY, true);
   }, { passive: true });
 
   // ...and a direct tap on the button jumps it away instead of

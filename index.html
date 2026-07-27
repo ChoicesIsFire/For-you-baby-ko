@@ -76,6 +76,8 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh; /* real visible viewport height on mobile — matches
+                            the same fix already used on the other pages */
     gap: 20px;
     padding: 30px 20px;
     opacity: 0;
@@ -285,7 +287,7 @@ button:hover {
 <!-- WRONG ANSWER POPUP -->
 <div class="popup" id="popup">
     <div class="popup-content">
-        <img id="gif" src="Cry.gif" onerror="this.style.display='none'">
+        <img id="gif" onerror="this.style.display='none'">
         <p id="popupCaption">HUHU my baby doesn't know me😭</p>
         <button onclick="closePopup()">sorry</button>
     </div>
@@ -379,8 +381,8 @@ const questions = [
 // exactly the same every single retry.
 const sorryCaptions = [
     "HUHU my baby doesn't know me😭",
-    "wait... try again please 🥺",
-    "one more chance? pretty please 💔"
+    "Wait... try again please 🥺",
+    "One more try? pretty please 💔"
 ];
 
 let index = 0;
